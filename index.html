@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KHA Smart Teaching</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* =======================================================
+       GLOBAL STYLES & RESET
+       ======================================================= */
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+    body { background: #f5f7fa; color: #333; line-height: 1.6; }
+
+    /* =======================================================
+       HEADER & NAVIGATION
+       ======================================================= */
+    header { width: 100%; padding: 18px 60px; background: #fff; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.08); position: fixed; top: 0; left: 0; z-index: 100; }
+    .logo { font-size: 1.8rem; font-weight: 800; color: #4c6ef5; display: flex; align-items: center; gap: 10px; }
+    .logo img { height: 40px; border-radius: 8px; animation: float 3s ease-in-out infinite; }
+    nav a { margin-left: 25px; text-decoration: none; color: #333; font-size: 1.05rem; transition: 0.3s; font-weight: 600; position: relative; }
+    nav a:after { content: ''; position: absolute; width: 0; height: 3px; display: block; margin-top: 5px; right: 0; background: #4c6ef5; transition: width 0.4s ease; }
+    nav a:hover:after { width: 100%; left: 0; background: #4c6ef5; }
+
+    /* =======================================================
+       HERO SECTION
+       ======================================================= */
+    .hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 150px 25px 50px; background-image: linear-gradient(rgba(0,0,0,0.75), rgba(0,0,0,0.85)), url('https://placehold.co/1920x1080/2a3e6e/ffffff?text=AI+Learning+Background'); background-size: cover; background-position: center; text-align: center; color: white; animation: fadeInUp 1.5s ease; border-bottom-left-radius: 50px; border-bottom-right-radius: 50px; }
+    .hero h1 { font-size: 3.5rem; margin-bottom: 20px; font-weight: 800; text-shadow: 0 4px 10px rgba(0, 0, 0, 0.4); animation: fadeInUp 1.2s ease forwards; }
+    .hero p { font-size: 1.3rem; max-width: 800px; margin: 0 auto 35px; animation: fadeInUp 1.2s ease forwards; color: #e9ecef; }
+
+    .start-btn { display: inline-block; margin-top: 30px; background: #4c6ef5; padding: 18px 60px; border-radius: 50px; font-size: 1.6rem; color: white; font-weight: bold; text-decoration: none; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 8px 20px rgba(76,110,245,0.4); animation: fadeInUp 1.3s ease forwards; border: 2px solid transparent; }
+    .start-btn:hover { background: #374ed1; box-shadow: 0 12px 30px rgba(76,110,245,0.6); transform: translateY(-5px) scale(1.05); border-color: white; }
+
+    /* =======================================================
+       SECTION TITLE
+       ======================================================= */
+    .section-title-container { text-align: center; padding: 60px 20px 30px; }
+    .section-title { font-size: 2.5rem; font-weight: 700; color: #2c3e50; margin-bottom: 15px; position: relative; }
+    .section-title::after { content: ''; display: block; width: 80px; height: 5px; background: #4c6ef5; margin: 10px auto 0; border-radius: 3px; }
+
+    /* =======================================================
+       FEATURES SECTION
+       ======================================================= */
+    .features { padding: 0px 60px 80px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 35px; }
+    .feature-card { background: white; padding: 35px; border-radius: 20px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); transition: 0.3s; text-align: center; border-top: 5px solid #4c6ef5; display: flex; flex-direction: column; align-items: center; height: 100%; }
+    .feature-icon { font-size: 2.5rem; color: white; margin-bottom: 20px; background: #4c6ef5; padding: 18px; border-radius: 50%; box-shadow: 0 5px 15px rgba(76,110,245,0.3); line-height: 1; }
+    .feature-card h2 { font-size: 1.5rem; margin-bottom: 12px; color: #2c3e50; font-weight: 700; }
+    .feature-card p { color: #6c757d; font-size: 1rem; }
+    .feature-card:hover { transform: translateY(-7px); box-shadow: 0 15px 30px rgba(0,0,0,0.15); }
+
+    /* =======================================================
+       CTA SECTION
+       ======================================================= */
+    .cta-section { background: #374ed1; color: white; text-align: center; padding: 80px 60px; margin-top: 50px; border-radius: 20px; max-width: 90%; margin-left: auto; margin-right: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+    .cta-section h2 { font-size: 2.2rem; margin-bottom: 15px; font-weight: 800; }
+    .cta-section p { font-size: 1.1rem; margin-bottom: 30px; color: #c8d2f8; }
+    .cta-btn-alt { display: inline-block; background: white; color: #374ed1; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: bold; text-decoration: none; transition: 0.3s; border: 2px solid white; }
+    .cta-btn-alt:hover { background: #e9ecef; transform: scale(1.05); box-shadow: 0 5px 15px rgba(255,255,255,0.3); }
+
+    /* =======================================================
+       FOOTER
+       ======================================================= */
+    footer { background: #2c3e50; color: white; text-align: center; padding: 25px; margin-top: 80px; font-size: 0.95rem; }
+
+    /* =======================================================
+       KEYFRAMES
+       ======================================================= */
+    @keyframes fadeInUp { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+    @keyframes float { 0% { transform: translateY(0); } 50% { transform: translateY(-5px); } 100% { transform: translateY(0); } }
+
+    /* =======================================================
+       RESPONSIVE
+       ======================================================= */
+    @media (max-width: 900px) { .hero h1 { font-size: 2.8rem; } .features, .cta-section { max-width: 100%; padding: 40px 25px; } }
+    @media (max-width: 600px) { header { padding: 15px 20px; } .logo { font-size: 1.5rem; } nav { display: none; } .hero h1 { font-size: 2rem; } .hero p { font-size: 1rem; } .start-btn { font-size: 1.2rem; padding: 14px 40px; } .section-title { font-size: 2rem; } .cta-section h2 { font-size: 1.8rem; } .cta-btn-alt { font-size: 1rem; padding: 12px 30px; } }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">
+    <img src="https://placehold.co/40x40/4c6ef5/ffffff?text=KHA" alt="KHA Logo">
+    KHA Smart Teaching
+  </div>
+  <nav>
+    <a href="#home">Home</a>
+    <a href="#features">Features</a>
+    <a href="#about">About</a>
+    <a href="#contact">Contact</a>
+  </nav>
+</header>
+
+<!-- HERO SECTION -->
+<section class="hero" id="home">
+  <div>
+    <h1>Empowering Smart Learning for the Future</h1>
+    <p>KHA Smart Teaching provides modern, AI-powered tools designed to make education interactive, effective, and engaging for both students and educators.</p>
+
+    <!-- CTA Buttons -->
+    <div style="margin-top:30px; display:flex; justify-content:center; gap:20px; flex-wrap:wrap;">
+      <a href="student (1).html" class="start-btn">START YOUR JOURNEY</a>
+      <a href="teacher.html" class="start-btn" style="background:#28a745;">ADMIN</a>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<div class="section-title-container" id="features">
+  <h2 class="section-title">Seamless Integration. Powerful Results.</h2>
+</div>
+
+<section class="features">
+  <div class="feature-card"><div class="feature-icon" title="AI Tutoring">🤖</div><h2>Personalized AI Tutoring</h2><p>Our intelligent system adapts to the student's learning pace, identifies weak points, and provides targeted practice for ultimate mastery.</p></div>
+  <div class="feature-card"><div class="feature-icon" title="Real-time Feedback">⚡</div><h2>Instant Performance Feedback</h2><p>Receive immediate, constructive feedback on assignments and quizzes, allowing students to correct errors and understand concepts rapidly.</p></div>
+  <div class="feature-card"><div class="feature-icon" title="Teacher Tools">📊</div><h2>Teacher Dashboard & Analytics</h2><p>Empower educators with real-time class analytics, automated grading, and comprehensive tools to manage and customize curriculum effortlessly.</p></div>
+  <div class="feature-card"><div class="feature-icon" title="Gamified Learning">🎮</div><h2>Engaging Gamified Modules</h2><p>Transform study time into fun challenges with interactive modules, leaderboards, and achievement badges to significantly boost student motivation.</p></div>
+  <div class="feature-card"><div class="feature-icon" title="Mobile Access">📱</div><h2>Access Anywhere, Anytime</h2><p>Ensure learning continuity across all devices—desktop, tablet, and mobile—so students can learn effectively whether at home or on the go.</p></div>
+  <div class="feature-card"><div class="feature-icon" title="Progress Tracking">📈</div><h2>Detailed Progress Tracking</h2><p>Visualize learning growth with clear, detailed reports, highlighting skill improvements and pointing out areas for advanced study.</p></div>
+</section>
+
+<section class="cta-section" id="contact">
+  <h2>Ready to Transform Your Classroom?</h2>
+  <p>Join the thousands of educators and students already benefiting from KHA Smart Teaching. Start your free trial today!</p>
+  <a href="#" class="cta-btn-alt">Request a Free Demo</a>
+</section>
+
+<footer>
+  © 2025 KHA Smart Teaching. All rights reserved.
+</footer>
+
+</body>
+</html>
