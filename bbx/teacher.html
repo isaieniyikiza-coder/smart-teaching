@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Teacher Dashboard - Kwigisha Live</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script> 
+  <style>
+    /* 1. Improved Responsive Layout & Styling (Gemini Dark Theme) */
+    body {
+        font-family: 'Inter', sans-serif;
+        /* Dark blue/slate gradient background */
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    }
+
+    /* 2. Card & Image Styling for Hover/Transitions */
+    .screen-card img {
+      width: 100%;
+      aspect-ratio: 16 / 9; /* Standard screen ratio */
+      object-fit: cover;
+      transition: all 0.2s ease-in-out;
+      border-radius: 0.5rem; 
+    }
+
+    .screen-card {
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      /* Default visibility for filtering */
+      display: block; 
+    }
+
+    .screen-card:hover {
+      /* Smooth scale up and teal glowing shadow on hover */
+      transform: scale(1.03);
+      box-shadow: 0 10px 30px rgba(6,182,212,0.5); /* Teal glow effect */
+    }
+
+    /* 6. Smooth, professional animations for adding/removing cards (Fade-in) */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fadeIn {
+        animation: fadeIn 0.5s ease-out;
+    }
+
+    /* 3. Full-Screen Modal Styling */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.95);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        backdrop-filter: blur(5px);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s, visibility 0.3s;
+    }
+    .modal-overlay.open {
+        opacity: 1;
+        visibility: visible;
+    }
+    .modal-content {
+        max-width: 95vw;
+        max-height: 95vh;
+        width: 100%;
+        position: relative;
+    }
+    #fullScreenImage {
+        width: 100%;
+        height: auto;
+        border-radius: 1rem;
+        box-shadow: 0 0 40px rgba(6,182,212,0.5); /* Stronger teal glow for focus */
+    }
+
+    /* Hover effects for buttons/icons */
+    .interactive-btn {
+        transition: transform 0.3s ease, background-color 0.3s ease;
+    }
+    .interactive-btn:hover {
+        transform: scale(1.1);
+    }
+
+    /* Tooltip Styling (using Tailwind classes in JS for content) */
+    .tooltip-container {
+        position: relative;
+    }
+    .tooltip-text {
+        visibility: hidden;
+        background-color: #334155; /* Slate-700 */
+        color: #fff;
+        text-align: center;
+        border-radius: 0.5rem;
+        padding: 0.5rem 1rem;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%; /* Position above the button */
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity 0.3s;
+        white-space: nowrap;
+    }
+    .tooltip-container:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+    }
+  </style>
+</head>
+<body class="p-6">
+
+  <!-- 1. Responsive Dashboard Layout - Header -->
+  <header class="text-center mb-12">
+    <h1 class="text-5xl font-extrabold text-teal-400 pb-3 inline-block">
+        <span class="inline-block align-middle mr-3"><i data-lucide="monitor-dot" class="w-10 h-10"></i></span>
+          SMART TEACHING
+    </h1>
+    <!-- 6. Live student count in the header updates automatically -->
+    <p class="text-teal-200 mt-2 text-lg">
+     Take <span id="studentCount" class="font-extrabold text-teal-400">0</span>live screen share .
+    </p>
+  </header>
+
+  <!-- 6. Optional filter/search bar -->
+  <div class="mx-auto max-w-7xl mb-8">
+      <div class="flex flex-col md:flex-row gap-4">
+          <div class="relative flex-grow">
+              <input type="text" id="studentSearch" placeholder="Search by name, class, or ID..." 
+                     class="w-full p-3 pl-10 rounded-xl bg-gray-900 text-teal-200 border border-teal-600 focus:ring-2 focus:ring-teal-400 transition-all shadow-lg focus:outline-none placeholder-gray-500">
+              <i data-lucide="search" class="w-5 h-5 text-teal-400 absolute left-3 top-1/2 transform -translate-y-1/2"></i>
+          </div>
+      </div>
+  </div>
+
+  <!-- 1. Responsive Dashboard Layout - Grid Container -->
+  <div id="screens" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mx-auto max-w-7xl">
+    <!-- 4. Stylish Placeholder for no students -->
+    <div id="placeholder" class="col-span-full text-center p-16 bg-gray-900 rounded-3xl shadow-2xl border-4 border-dashed border-teal-600/50 animate-fadeIn">
+        <div class="flex flex-col items-center justify-center space-y-4">
+            <i data-lucide="scan-eye" class="w-16 h-16 text-teal-400 opacity-75"></i>
+            <p class="text-3xl text-teal-300 font-extrabold">
+               Waigt for teacher
+            </p>
+            <p class="text-xl text-gray-400 font-light">
+                SEARCHING FOR ANY STUDENT LIVE SCREEN 
+            </p>
+        </div>
+    </div>
+  </div>
+
+  <!-- 3. Fullscreen Modal Improvements -->
+  <div id="fullScreenModal" class="modal-overlay" onclick="closeModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <!-- Modal Close Button (3. Close button with hover effect) -->
+        <button onclick="closeModal()" class="interactive-btn absolute top-4 right-4 z-10 p-3 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-xl transform hover:scale-110 tooltip-container">
+            <i data-lucide="x" class="w-6 h-6"></i>
+            <span class="tooltip-text">Close </span>
+        </button>
+        <!-- Modal Student Info Display (3. Display student info clearly) -->
+        <div class="absolute top-4 left-4 p-3 rounded-xl bg-teal-600 text-white shadow-xl text-lg font-bold">
+            Screen  <span id="modalStudentInfo">N/A</span>
+        </div>
+        <!-- Full Screen Image -->
+        <img id="fullScreenImage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Full-Screen Live Student Screen">
+    </div>
+  </div>
+
+  <!-- 5 & 7. WebSocket Integration and JavaScript Functionality -->
+  <script>
+    const screensContainer = document.getElementById("screens");
+    const studentCountDisplay = document.getElementById("studentCount");
+    const fullScreenModal = document.getElementById("fullScreenModal");
+    const fullScreenImage = document.getElementById("fullScreenImage");
+    const modalStudentInfoDisplay = document.getElementById("modalStudentInfo");
+    const studentSearchInput = document.getElementById("studentSearch");
+
+    // Storage for student metadata and screen elements
+    const studentDetails = {}; // { studentId: { id, username, class } }
+    const screenElements = {}; // { studentId: { card, img, infoP } }
+    let focusedStudentId = null;
+
+    // 5. WebSocket connection
+    const ws = new WebSocket("ws://localhost:8080/?role=teacher");
+    ws.onopen = () => { console.log("Teacher connected to WebSocket server."); lucide.createIcons(); };
+    ws.onclose = () => console.error("WebSocket Disconnected.");
+    ws.onerror = e => console.error("WebSocket Error:", e);
+
+    ws.onmessage = (event) => {
+        // Handle text messages (Control Commands: NEW_STUDENT, ACTIVE_LIST, DISCONNECT)
+        if(typeof event.data === 'string'){
+            if(event.data.startsWith('NEW_STUDENT:')){
+                try{
+                    const userInfo = JSON.parse(event.data.substring(12));
+                    addStudentDetails(userInfo);
+                } catch(e){ console.error("Error parsing NEW_STUDENT info:", e); }
+            } else if (event.data.startsWith('ACTIVE_LIST:')){
+                try{
+                    const activeStudentsList = JSON.parse(event.data.substring(12));
+                    activeStudentsList.forEach(addStudentDetails);
+                } catch(e){ console.error("Error parsing ACTIVE_LIST info:", e); }
+            } else if (event.data.startsWith('DISCONNECT:')){
+                const studentId = event.data.substring(11);
+                removeScreen(studentId);
+            }
+            return;
+        }
+
+        // Handle binary data (Live Screen Frame)
+        const blob = new Blob([event.data]);
+        const reader = new FileReader();
+        reader.onload = () => {
+            const arrayBuffer = reader.result;
+            const dataView = new DataView(arrayBuffer);
+            let idEndIndex = -1;
+            // Find delimiter '|' (ASCII 124)
+            for (let i=0;i<dataView.byteLength;i++){
+                if(dataView.getUint8(i)===124){ idEndIndex=i; break;}
+            }
+
+            if(idEndIndex > 0){
+                // Extract Student ID (up to the delimiter)
+                const studentId = new TextDecoder().decode(arrayBuffer.slice(0,idEndIndex));
+                // Extract image data (after the delimiter)
+                const imageBlob = new Blob([arrayBuffer.slice(idEndIndex+1)], {type:"image/jpeg"});
+                
+                // 7. updateScreen(studentId, imageBlob)
+                updateScreen(studentId, imageBlob);
+            }
+        };
+        reader.readAsArrayBuffer(blob);
+    };
+
+    /**
+     * 7. addStudentDetails(userInfo) - Adds/updates student metadata (username, class, id)
+     * @param {object} userInfo - { id, username, class }
+     */
+    function addStudentDetails(userInfo){
+        studentDetails[userInfo.id] = userInfo;
+        // If the card exists, ensure the text info is updated
+        if(screenElements[userInfo.id]){
+             screenElements[userInfo.id].infoP.textContent = `${userInfo.username} - ${userInfo.class}`;
+        }
+    }
+
+    /**
+     * 7. openModal(studentId) - Opens the full-screen view for the selected student
+     * @param {string} studentId
+     */
+    function openModal(studentId){
+        const card = screenElements[studentId];
+        if(!card) return;
+
+        focusedStudentId = studentId;
+        const student = studentDetails[studentId] || {username: 'Unknown', class: 'Unknown'};
+        
+        // 3. Show student info in modal
+        modalStudentInfoDisplay.textContent = `${student.username} - ${student.class}`;
+        fullScreenImage.src = card.img.src;
+        
+        // 3. Proper focus highlight for the selected card
+        Object.values(screenElements).forEach(el=>el.card.classList.remove("ring-4","ring-teal-400"));
+        card.card.classList.add("ring-4","ring-teal-400");
+        
+        // 3. Smooth opening transition
+        fullScreenModal.classList.add("open");
+    }
+
+    /**
+     * 7. closeModal() - Closes the full-screen view
+     */
+    function closeModal(){
+        if(focusedStudentId){
+            const prev = screenElements[focusedStudentId];
+            if(prev) prev.card.classList.remove("ring-4","ring-teal-400");
+        }
+        focusedStudentId=null;
+         // 3. Smooth closing transition
+        fullScreenModal.classList.remove("open");
+    }
+
+    /**
+     * 6. Optional filter/search bar - Filters screens based on search input
+     */
+    function filterScreens(){
+        const query = studentSearchInput.value.toLowerCase().trim();
+        
+        const studentIds = Object.keys(screenElements);
+        if (studentIds.length === 0) return;
+
+        studentIds.forEach(studentId => {
+            const student = studentDetails[studentId];
+            const cardElement = screenElements[studentId]?.card;
+
+            if (!student || !cardElement) return;
+
+            const { username, class: studentClass, id } = student;
+            
+            // Search criteria: username, class, or ID match the query
+            const isMatch = username.toLowerCase().includes(query) ||
+                            studentClass.toLowerCase().includes(query) ||
+                            id.toLowerCase().includes(query);
+
+            // Toggle visibility based on match
+            cardElement.style.display = isMatch ? 'block' : 'none';
+        });
+    }
+
+    /**
+     * 7. updateScreen(studentId, imageBlob) - Creates or updates a student screen card.
+     * @param {string} studentId
+     * @param {Blob} imageBlob
+     */
+    function updateScreen(studentId, imageBlob){
+        // 4. Remove placeholder once data starts flowing
+        const placeholder=document.getElementById("placeholder");
+        if(placeholder) placeholder.remove();
+
+        let card = screenElements[studentId];
+        let img;
+        const student = studentDetails[studentId] || {username: 'Unknown', class: 'Unknown', id: studentId};
+        const studentInfoText = `${student.username} - ${student.class}`;
+
+        if(!card){
+            // 2. Create new card elements
+            card=document.createElement("div");
+            card.id=`screen-${studentId}`;
+            // 1. Apply styling, hover, and fade-in
+            card.className="screen-card bg-gray-800 rounded-2xl shadow-2xl hover:shadow-teal-500/50 hover:scale-[1.03] transition-all duration-500 p-4 animate-fadeIn cursor-pointer relative";
+
+            // 2. Full-screen modal when clicking card
+            card.onclick=()=>openModal(studentId);
+
+            const labelDiv=document.createElement("div");
+            labelDiv.className="flex justify-between items-start mb-3";
+
+            // Paragraph to display Username and Class (2. Student username, class)
+            const infoP=document.createElement("p");
+            infoP.className="text-base font-extrabold text-teal-300 truncate";
+            infoP.textContent=studentInfoText;
+            
+            // Small ID display (2. Student ID)
+            const idSpan=document.createElement("span");
+            idSpan.className="text-xs font-mono text-gray-500 block";
+            idSpan.textContent=`ID: ${studentId}`;
+
+            // DELETE BUTTON (2. Delete button)
+            const deleteBtnContainer = document.createElement("div");
+            deleteBtnContainer.className="tooltip-container";
+
+            const deleteBtn=document.createElement("button");
+            deleteBtn.className="interactive-btn p-2 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-lg z-10";
+            deleteBtn.innerHTML='<i data-lucide="trash-2" class="w-4 h-4"></i>';
+            deleteBtn.title="Delete / Stop this live stream";
+            deleteBtn.onclick=(e)=>{ 
+                e.stopPropagation();
+                // Send a request to remove the card from the dashboard (local removal for this example)
+                removeScreen(studentId);
+            };
+            deleteBtnContainer.appendChild(deleteBtn);
+            // 6. Tooltip for delete button
+            deleteBtnContainer.innerHTML += '<span class="tooltip-text">Remove Screen</span>';
+
+
+            const textContainer = document.createElement("div");
+            textContainer.appendChild(infoP);
+            textContainer.appendChild(idSpan);
+            
+            labelDiv.appendChild(textContainer);
+            
+            card.appendChild(labelDiv);
+            card.appendChild(deleteBtnContainer);
+
+            // 2. Live screen image element
+            img=document.createElement("img");
+            img.alt=`Live screen share from ${student.username}`;
+            img.className="rounded-xl border-4 border-gray-700 block mt-2";
+            card.appendChild(img);
+
+            screensContainer.appendChild(card);
+            
+            // Store references for fast updates
+            screenElements[studentId]={card,img,infoP: infoP}; 
+            updateCount();
+            // Re-render Lucide icons for new elements
+            lucide.createIcons();
+            // Apply current filter settings to the new card
+            filterScreens();
+        }else{
+            // Update existing card (performance optimization)
+            img=card.img;
+            // 6. Memory optimization: Revoke old object URL to prevent memory leaks
+            if(img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+            
+            // 7. Update text in case student details arrived later
+            card.infoP.textContent = studentInfoText; 
+        }
+
+        // Update image source and modal if focused
+        img.src=URL.createObjectURL(imageBlob);
+        if(studentId===focusedStudentId) fullScreenImage.src=img.src;
+    }
+
+    /**
+     * 7. removeScreen(studentId) - Removes a student card and cleans up references
+     * @param {string} studentId
+     */
+    function removeScreen(studentId){
+        if(studentId===focusedStudentId) closeModal();
+        const element=screenElements[studentId];
+        
+        if(element){
+            element.card.remove();
+            // 6. Memory optimization: Revoke old object URL
+            if(element.img.src.startsWith('blob:')) URL.revokeObjectURL(element.img.src);
+            
+            delete screenElements[studentId];
+            delete studentDetails[studentId];
+            updateCount();
+        }
+        
+        // 4. Show stylish placeholder if no students are left
+        if(Object.keys(screenElements).length===0){
+            screensContainer.innerHTML=`<div id="placeholder" class="col-span-full text-center p-16 bg-gray-900 rounded-3xl shadow-2xl border-4 border-dashed border-teal-600/50 animate-fadeIn">
+                <div class="flex flex-col items-center justify-center space-y-4">
+                    <i data-lucide="scan-eye" class="w-16 h-16 text-teal-400 opacity-75"></i>
+                    <p class="text-3xl text-teal-300 font-extrabold">
+                        Turategereje Abanyeshuri...
+                    </p>
+                    <p class="text-xl text-gray-400 font-light">
+                        Nta munyeshuri urahuza screen ye. Kwigisha Live bizatangira bahuza.
+                    </p>
+                </div>
+            </div>`;
+            lucide.createIcons();
+        }
+    }
+
+    /**
+     * 7. updateCount() - Updates the header count display
+     */
+    function updateCount(){ studentCountDisplay.textContent=Object.keys(screenElements).length; }
+    
+    // Initial setup and listeners
+    document.addEventListener('DOMContentLoaded', () => {
+        if(typeof lucide !== 'undefined') lucide.createIcons();
+        // 6. Attach filter listener to the search input
+        studentSearchInput.addEventListener('input', filterScreens);
+    });
+  </script>
+</body>
+</html>

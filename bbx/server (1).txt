@@ -2,12 +2,8 @@ const WebSocket = require("ws");
 const crypto = require("crypto");
 const url = require("url"); // Dutangiye gukoresha 'url' kugirango dukureho parameters muri URL
 
-// const wss = new WebSocket.Server({ port: 8080 });
-// console.log("SERVER STARTED ON ws://localhost:8080");
-const PORT = process.env.PORT || 8080;
-const wss = new WebSocket.Server({ port: PORT });
-console.log("SERVER STARTED ON PORT:", PORT);
-
+const wss = new WebSocket.Server({ port: 8080 });
+console.log("SERVER STARTED ON ws://localhost:8080");
 
 // Stores mapping of active student details (ID -> {username, class})
 // Igipimo kibika amakuru y'abanyeshuri bahuje screens (ID -> {username, class})

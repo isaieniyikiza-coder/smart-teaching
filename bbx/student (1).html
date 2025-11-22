@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Umunyeshuri Gushyira Hanze Screen</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Custom style to ensure the video scales correctly within the container */
+    #localVideo {
+      aspect-ratio: 16 / 9; /* Standard screen aspect ratio */
+      width: 100%;
+      display: none; /* Hisha kugeza igihe sharing itangiye */
+    }
+    body{
+       background: linear-gradient(to right, #6366f1, #c7d2fe);
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4 font-sans">
+  
+<h1 class="text-3xl font-extrabold text-white mb-6">KHA SMART TEACHING</h1>
+
+  <!-- Panel yo Kwinjira -->
+  <div id="loginPanel" class="screen-share-container bg-white p-8 md:p-10 rounded-xl shadow-2xl max-w-sm w-full text-center border-t-4 border-indigo-600">
+    <h1 class="text-2xl font-bold text-indigo-700 mb-6">Injira (Connect)</h1>
+    
+    <div class="mb-4 text-left">
+        <label for="usernameInput" class="block text-sm font-medium text-gray-700 mb-1">Izina (Username)</label>
+        <input type="text" id="usernameInput" placeholder="Andika Izina" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm" required>
+    </div>
+    
+    <div class="mb-6 text-left">
+        <label for="classInput" class="block text-sm font-medium text-gray-700 mb-1">Ishuri (Class)</label>
+        <input type="text" id="classInput" placeholder="Urugero: S3-PCM" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm" required>
+    </div>
+    
+    <button id="startButton" onclick="startSharing()" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-indigo-700 transition duration-150 ease-in-out flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-monitor-share mr-2"><path d="M12 12V2c0-1.1.9-2 2-2h6c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2h-6c-1.1 0-2-.9-2-2zM4 12V2c0-1.1.9-2 2-2h6c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2h-6c-1.1 0-2-.9-2-2z"/><path d="M12 22v-4"/><path d="M12 22h-4c-1.1 0-2-.9-2-2v-4"/><path d="M4 12v-2"/></svg>
+        Tangira Gusangiza (Start Sharing)
+    </button>
+  </div>
+  <!-- CTA Buttons -->
+<div style="margin-top:30px; display:flex; justify-content:center; gap:20px; flex-wrap:wrap;">
+
+  <!-- Student Button -->
+  <a href="student (1).html" 
+     class="start-btn"
+     style="background:#4c6ef5;">
+    START YOUR JOURNEY
+  </a>
+
+  <!-- Admin Button -->
+  <a href="teacher.html" 
+     class="start-btn"
+     style="background:#28a745; border:2px solid #28a745; transition: all 0.3s ease; box-shadow:0 8px 20px rgba(40,167,69,0.4);">
+    ADMIN
+  </a>
+</div>
+
+  </div>
+  
+  <!-- Panel yo Gushyira hanze -->
+  <div id="sharingPanel" class="screen-share-container bg-white p-6 md:p-10 rounded-xl shadow-2xl max-w-lg w-full text-center border-t-4 border-indigo-600 hidden">
+    <h1 class="text-3xl font-extrabold text-indigo-700 mb-4">Live Screen Sharing</h1>
+        
+    <div class="mb-6 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+        <p class="text-sm text-indigo-800 font-semibold">Uwanditse:</p>
+        <p id="studentInfoDisplay" class="text-xl font-mono text-indigo-900 mt-1">...</p>
+        <p id="studentIdDisplay" class="text-xs text-indigo-600 mt-1">ID: ...</p>
+    </div>
+
+    <!-- Video element for the student to see what they are sharing -->
+    <video id="localVideo" autoplay muted class="rounded-lg shadow-lg border-4 border-gray-200 block mb-4"></video>
+
+    <div id="status" class="text-sm font-medium text-gray-600">
+        Hitamo 'Share' hejuru kugirango utangire kohereza screen yawe.
+    </div>
+  </div>
+
+  <script>
+    let studentId = null;
+    let ws = null;
+    let username = null;
+    let classname = null;
+
+    const loginPanel = document.getElementById("loginPanel");
+    const sharingPanel = document.getElementById("sharingPanel");
+    const usernameInput = document.getElementById("usernameInput");
+    const classInput = document.getElementById("classInput");
+
+    const studentIdDisplay = document.getElementById("studentIdDisplay");
+    const studentInfoDisplay = document.getElementById("studentInfoDisplay");
+    const videoElement = document.getElementById("localVideo");
+    const statusElement = document.getElementById("status");
+    
+    // Function to handle connection and screen sharing logic
+    async function startSharing() {
+      username = usernameInput.value.trim();
+      classname = classInput.value.trim();
+      
+      if (!username || !classname) {
+          // Dukoresha alert ya custom (gusa muri iki kibazo ngiye gukoresha default kubera ko uri muri HTML)
+          alert("Andika Izina n'Ishuri mbere yo gutangira.");
+          return;
+      }
+      
+      // 1. Hisha login panel yerekanishe sharing panel
+      loginPanel.classList.add("hidden");
+      sharingPanel.classList.remove("hidden");
+      
+      // Update display with initial info
+      studentInfoDisplay.textContent = `${username} - ${classname}`;
+      statusElement.textContent = "Guhitamo screen...";
+
+      try {
+        // 2. Prompt the user to select the screen/window to share
+        const stream = await navigator.mediaDevices.getDisplayMedia({ 
+            video: true,
+            audio: false // Tugomba kudakoresha audio kugirango byoroshye
+        });
+        
+        videoElement.srcObject = stream;
+        videoElement.style.display = 'block';
+        statusElement.textContent = "Guhuza na server...";
+
+        // 3. Huza na WebSocket server ukoresheje URL parameters
+        const serverUrl = `ws://localhost:8080/?role=student&username=${encodeURIComponent(username)}&class=${encodeURIComponent(classname)}`;
+        ws = new WebSocket(serverUrl);
+        
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        ws.onopen = () => {
+            statusElement.textContent = "Status: Connected to Server. Awaiting Info...";
+        };
+
+        // 4. Kwakira amakuru (INFO) yuzuye avuye kuri server
+        ws.onmessage = (event) => {
+            if (typeof event.data === 'string' && event.data.startsWith('INFO:')) {
+                const infoString = event.data.substring(5); 
+                try {
+                    const userInfo = JSON.parse(infoString);
+                    studentId = userInfo.id; // Kwakira ID
+                    studentIdDisplay.textContent = `ID: ${studentId}`;
+                    studentInfoDisplay.textContent = `${userInfo.username} - ${userInfo.class}`;
+                    statusElement.textContent = "Status: Connected and Sharing Live...";
+                    
+                    // Iyo ID yakiriwe, tangira kohereza ama-frame
+                    startFrameSender(canvas, ctx);
+                } catch (e) {
+                    console.error("Error parsing user info from server:", e);
+                    statusElement.textContent = "Connection Error: Failed to process server response.";
+                }
+            }
+        };
+
+        ws.onclose = () => {
+            statusElement.textContent = "Status: Disconnected. Refresh page to try again.";
+        };
+        
+        ws.onerror = (error) => {
+            console.error("WebSocket Error:", error);
+            statusElement.textContent = "Status: Connection Error. Check console.";
+        };
+
+        // Gufunga stream (iyo umunyeshuri ahagaritse)
+        stream.getVideoTracks()[0].onended = () => {
+            statusElement.textContent = "Gusangiza byahagaze n'umunyeshuri. Refresh page to restart.";
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            }
+        };
+
+      } catch (err) {
+        console.error("Error starting screen share:", err);
+        statusElement.textContent = `Error: ${err.name}. Make sure you select a screen to share.`;
+        // Yerekanisha login panel nanone iyo byanze
+        loginPanel.classList.remove("hidden");
+        sharingPanel.classList.add("hidden");
+      }
+    }
+
+    function startFrameSender(canvas, ctx) {
+        // Twoherereza ama-frame buri 200ms (5 FPS)
+        setInterval(() => {
+            if (!studentId || !videoElement.videoWidth || ws.readyState !== WebSocket.OPEN) return;
+
+            // 1. Fata frame
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+            ctx.drawImage(videoElement, 0, 0);
+
+            // 2. Hindura canvas mu JPEG blob
+            canvas.toBlob(blob => {
+                if (blob) {
+                    // Twoherereza binary buffer 
+                    blob.arrayBuffer().then(buf => ws.send(buf));
+                }
+            }, "image/jpeg", 0.6); // 0.6 ni ubuziranenge (quality)
+        }, 200); 
+    }
+  </script>
+</body>
+</html>

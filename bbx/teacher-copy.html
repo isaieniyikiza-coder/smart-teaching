@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SMART TEACHING - OVERLORD CONSOLE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/typewriter-effect@latest/dist/core.js"></script>
+  <style>
+    :root {
+      --primary-color: #00ff9d; /* Neon Green */
+      --secondary-color: #00d0ff; /* Light Blue */
+      --bg-dark: #00000a; /* Almost Black */
+      --bg-gradient: radial-gradient(circle at top left, #050015 0%, #000 80%);
+      --border-glow: 0 0 15px var(--primary-color), 0 0 30px var(--primary-color) inset;
+    }
+    body {
+      margin: 0; padding: 0; height: 100vh; overflow: hidden;
+      background: var(--bg-gradient);
+      color: var(--primary-color);
+      font-family: 'JetBrains Mono', monospace;
+      position: relative;
+      /* PRO AI STYLING: CRT Effect */
+      filter: url('#crt-filter');
+    }
+    
+    /* CRT Scanlines and Noise */
+    .crt::before {
+        content: " ";
+        display: block;
+        position: fixed;
+        top: 0; right: 0; bottom: 0; left: 0;
+        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+        z-index: 100000;
+        pointer-events: none;
+        animation: scanline-flicker 15s linear infinite;
+        background-size: 100% 4px, 3px 100%;
+        opacity: 0.1;
+    }
+    @keyframes scanline-flicker {
+      0% { background-position: 0 0; }
+      100% { background-position: 0 500px; }
+    }
+
+    /* Glitch Animation */
+    @keyframes glitch {
+      0% { transform: translate(0); }
+      2% { transform: translate(-2px, 2px); }
+      4% { transform: translate(-2px, -2px); }
+      6% { transform: translate(2px, 2px); }
+      8% { transform: translate(2px, -2px); }
+      10% { transform: translate(0); }
+      100% { transform: translate(0); }
+    }
+    .glitch-text { animation: glitch 10s step-end infinite; }
+
+
+    .header {
+      text-align: center; padding: 1.5rem; font-family: 'Orbitron', sans-serif;
+      font-size: clamp(1.5rem, 4vw, 2.8rem); letter-spacing: 8px; 
+      text-shadow: 0 0 10px var(--primary-color), 0 0 30px var(--primary-color);
+      background: linear-gradient(180deg, rgba(0,255,157,0.2), transparent);
+      border-bottom: 3px solid var(--primary-color);
+      position: relative; z-index: 10;
+    }
+
+    #terminal {
+      height: calc(100vh - 120px); padding: 1.5rem; overflow-y: auto;
+      background: rgba(0,0,0,0.8);
+      box-shadow: var(--border-glow);
+      position: relative; z-index: 10;
+    }
+
+    /* Fullscreen AI Grid Styling */
+    #aiGrid {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.98);
+      z-index: 9999; padding: 2rem; overflow-y: auto; display: none;
+      animation: glitchIn 0.8s ease-in-out;
+      border: 5px solid var(--secondary-color);
+    }
+    #aiGrid.active { display: block; }
+    #aiGrid:fullscreen { padding: 0; background: black; } /* Clean fullscreen view */
+
+    @keyframes glitchIn {
+      0% { opacity: 0; clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); }
+      100% { opacity: 1; clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+    }
+
+    .ai-grid-container {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 2rem; max-width: 1800px; margin: 2rem auto;
+      transition: grid-template-columns 0.5s ease;
+    }
+    .ai-grid-container.focused {
+      grid-template-columns: 1fr; /* Single column for focused view */
+      max-width: 90%;
+    }
+
+    .ai-screen-card {
+      position: relative; border: 3px solid var(--secondary-color); border-radius: 12px;
+      overflow: hidden; box-shadow: 0 0 10px var(--secondary-color);
+      transition: all 0.3s ease-in-out; cursor: pointer;
+      background: rgba(0,0,0,0.7);
+    }
+    .ai-screen-card:hover:not(.focused-card) { transform: translateY(-5px) scale(1.02); box-shadow: 0 0 40px var(--primary-color); z-index: 10; }
+    .ai-screen-card.focused-card {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 20px var(--primary-color);
+    }
+
+    .ai-student-name {
+      position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.9);
+      padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 1rem;
+      border: 1px solid var(--primary-color); text-shadow: 0 0 8px var(--primary-color); z-index: 10;
+    }
+
+    .ai-screen-img { width: 100%; aspect-ratio: 16/9; object-fit: cover; }
+
+    .input-line { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.95); padding: 15px 20px; border-top: 2px solid var(--primary-color); z-index: 20; }
+    #commandInput {
+        background: none; border: none; color: var(--secondary-color); font-size: 1.1rem;
+        outline: none; width: calc(100% - 150px);
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+    .cursor { display: inline-block; width: 10px; height: 1.2em; background: var(--primary-color); animation: blink 1s infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+    .typewriter { color: var(--secondary-color); font-family: 'Rajdhani', sans-serif; font-size: 1.3rem; margin-bottom: 1rem;}
+    .log-line { margin: 4px 0; }
+
+    /* System Status Panel Styling */
+    #statusPanel {
+      position: fixed; top: 15px; left: 15px; width: 300px; padding: 10px;
+      border: 2px solid var(--primary-color);
+      background: rgba(0,0,0,0.95);
+      box-shadow: 0 0 15px var(--primary-color);
+      z-index: 50;
+    }
+    .status-item {
+      display: flex; justify-content: space-between; font-size: 0.9rem; line-height: 1.5;
+    }
+    .status-label { color: var(--secondary-color); }
+    .status-value { color: var(--primary-color); font-weight: bold; }
+    .status-online { color: #00ff00; }
+    .status-offline { color: #ff0066; }
+  </style>
+</head>
+<body class="crt">
+
+  <!-- SVG Filter for CRT Effect -->
+  <svg width="0" height="0">
+    <filter id="crt-filter">
+      <feTurbulence baseFrequency="0.05 0.05" type="fractalNoise" result="noise" numOctaves="1" />
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.1"/>
+      </feComponentTransfer>
+      <feColorMatrix type="saturate" values="1.2" />
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+  </svg>
+
+  <div class="header"> // OVERLORD CONSOLE //</div>
+
+  <div id="statusPanel">
+    <h3 class="text-xs font-bold mb-2 text-center" style="color:#00ff00; font-family:Orbitron;">SYSTEM STATUS (S2)</h3>
+    <div class="status-item">
+      <span class="status-label">SERVER:</span>
+      <span id="statusServer" class="status-offline">DISCONNECTED</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">TARGETS:</span>
+      <span id="statusTargets" class="status-value">0</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">UPTIME:</span>
+      <span id="statusUptime" class="status-value">00:00:00</span>
+    </div>
+  </div>
+
+  <div id="terminal">
+    <div id="typewriter" class="typewriter"></div>
+    <div id="output"></div>
+  </div>
+
+  <div class="input-line">
+    <span style="color:var(--primary-color); font-weight:bold" class="glitch-text">OVERLORD@CORE:~$</span>
+    <input type="text" id="commandInput" autofocus autocomplete="off">
+    <div class="cursor"></div>
+  </div>
+
+  <!-- AI Grid Vision (The element to fullscreen) -->
+  <div id="aiGrid">
+    <button onclick="closeAIGrid()" class="fixed top-5 right-5 z-[10001] bg-[#ff0066] hover:bg-red-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all" style="box-shadow: 0 0 30px red;">EXIT VISION MODE</button>
+    <h1 class="glitch-text" style="text-align:center;font-family:Orbitron;font-size:clamp(2rem, 5vw, 4rem);color:var(--primary-color);text-shadow:0 0 40px var(--primary-color);margin:2rem 0;">
+      LIVE TARGET FEED — <span id="liveCount">0</span> ACQUIRED
+    </h1>
+    <div class="ai-grid-container" id="aiScreenContainer"></div>
+  </div>
+
+  <!-- Global Alert -->
+  <div id="alertOverlay" class="alert-overlay">
+    <div id="alertText">WARNING</div>
+  </div>
+
+  <script>
+    const output = document.getElementById('output');
+    const input = document.getElementById('commandInput');
+    const aiGrid = document.getElementById('aiGrid');
+    const aiScreenContainer = document.getElementById('aiScreenContainer');
+    const liveCount = document.getElementById('liveCount');
+    const typewriter = document.getElementById('typewriter');
+
+    const statusServer = document.getElementById('statusServer');
+    const statusTargets = document.getElementById('statusTargets');
+    const statusUptime = document.getElementById('statusUptime');
+    let startTime = new Date();
+    let uptimeInterval;
+
+    // Data structure to store student info and the latest screenshot URL
+    const liveStudents = {};
+    let focusedStudent = null;
+
+    // Typewriter intro
+    new Typewriter(typewriter, { loop: false, delay: 30 })
+      .typeString('> Initializing Overlord Console Interface...')
+      .pauseFor(500)
+      .typeString('<br>> Running self-diagnosis... ')
+      .pauseFor(300)
+      .typeString('<span style="color:#00ff00">DIAGNOSIS COMPLETE.</span>')
+      .pauseFor(500)
+      .start();
+
+    // Uptime timer function
+    function updateUptime() {
+      const now = new Date();
+      const diff = now - startTime;
+      const seconds = Math.floor(diff / 1000);
+
+      const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
+      const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+      const s = String(seconds % 60).padStart(2, '0');
+
+      statusUptime.textContent = `${h}:${m}:${s}`;
+    }
+
+    // WebSocket Setup
+    const ws = new WebSocket("ws://localhost:8080/?role=teacher");
+
+    ws.onopen = () => {
+        log("OVERLORD ONLINE. ALL SYSTEMS NOMINAL.", "var(--primary-color)");
+        statusServer.textContent = "ONLINE";
+        statusServer.classList.remove('status-offline');
+        statusServer.classList.add('status-online');
+        startTime = new Date();
+        uptimeInterval = setInterval(updateUptime, 1000);
+    };
+
+    ws.onclose = () => {
+        log("WARNING: CONNECTION TO CORE LOST.", "#ff0066");
+        statusServer.textContent = "OFFLINE";
+        statusServer.classList.remove('status-online');
+        statusServer.classList.add('status-offline');
+        clearInterval(uptimeInterval);
+    };
+    
+    ws.onerror = (error) => {
+        log(`CRITICAL ERROR: Connection failure.`, "#ff0066");
+    };
+
+    ws.onmessage = (event) => {
+      if (typeof event.data === 'string') {
+        const msg = event.data;
+
+        if (msg.startsWith('NEW_STUDENT:')) {
+          const info = JSON.parse(msg.substring(12));
+          liveStudents[info.id] = { ...info, lastSeen: new Date(), blobUrl: null };
+          log(`[ACQUIRED] ${info.username} from ${info.class} [ID: ${info.id.substring(0,8)}...]`);
+        } else if (msg.startsWith('ACTIVE_LIST:')) {
+          const list = JSON.parse(msg.substring(12));
+          list.forEach(info => {
+             liveStudents[info.id] = { ...info, lastSeen: new Date(), blobUrl: null };
+          });
+          log(`[SYSTEM] Initial sync complete. ${list.length} active targets loaded.`, "var(--secondary-color)");
+        } else if (msg.startsWith('DISCONNECT:')) {
+          const id = msg.substring(11);
+          if (liveStudents[id]) {
+            log(`[LOST] Target ${liveStudents[id].username} disconnected.`);
+            if (liveStudents[id].blobUrl) URL.revokeObjectURL(liveStudents[id].blobUrl);
+            delete liveStudents[id];
+            if (aiGrid.classList.contains('active')) updateAIGrid();
+          }
+        }
+        updateCount();
+        return;
+      }
+
+      // Handle binary screen data
+      const reader = new FileReader();
+      reader.onload = () => {
+        const arr = new Uint8Array(reader.result);
+        let i = 0; while (i < arr.length && arr[i] !== 124) i++; // Find the '|' separator (ASCII 124)
+        const id = new TextDecoder().decode(arr.slice(0, i));
+        const imgBlob = new Blob([arr.slice(i + 1)], { type: 'image/jpeg' });
+        const url = URL.createObjectURL(imgBlob);
+
+        if (liveStudents[id]) {
+          if (liveStudents[id].blobUrl) URL.revokeObjectURL(liveStudents[id].blobUrl);
+          liveStudents[id].blobUrl = url;
+          liveStudents[id].lastSeen = new Date();
+          if (aiGrid.classList.contains('active')) updateAIGrid();
+        }
+      };
+      reader.readAsArrayBuffer(event.data);
+    };
+
+    function log(msg, color = "var(--primary-color)") {
+      const div = document.createElement('div');
+      div.className = 'log-line';
+      div.innerHTML = msg;
+      div.style.color = color;
+      output.appendChild(div);
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function updateCount() {
+      const count = Object.keys(liveStudents).length;
+      liveCount.textContent = count;
+      statusTargets.textContent = count;
+    }
+
+    // Function to handle browser fullscreen
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        if (aiGrid.requestFullscreen) {
+          aiGrid.requestFullscreen();
+        } else if (aiGrid.webkitRequestFullscreen) { /* Safari */
+          aiGrid.webkitRequestFullscreen();
+        } else if (aiGrid.msRequestFullscreen) { /* IE11 */
+          aiGrid.msRequestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) { /* Safari */
+          document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) { /* IE11 */
+          document.msExitFullscreen();
+        }
+      }
+    }
+    
+    // Function to focus on a specific student screen
+    function focusStudent(id) {
+        focusedStudent = id;
+        
+        // Remove focus class from all cards
+        document.querySelectorAll('.ai-screen-card').forEach(card => card.classList.remove('focused-card'));
+        
+        // Add focused class to container and scroll to top
+        aiScreenContainer.classList.add('focused');
+        aiGrid.scrollTop = 0;
+
+        // Re-render to put the focused student first
+        updateAIGrid();
+
+        // Find the newly rendered card for the focused student and add class
+        const focusedCard = document.getElementById(`card-${id}`);
+        if (focusedCard) {
+            focusedCard.classList.add('focused-card');
+            // Scroll the focused card into view if needed
+            focusedCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        log(`FOCUS ACQUIRED on ${liveStudents[id].username}.`, "#00ffff");
+    }
+
+    function updateAIGrid() {
+      aiScreenContainer.innerHTML = '';
+      
+      // Separate focused student (if any)
+      let studentsArray = Object.values(liveStudents).sort((a, b) => b.lastSeen - a.lastSeen);
+      if (focusedStudent && liveStudents[focusedStudent]) {
+          const focusedData = studentsArray.find(s => s.id === focusedStudent);
+          studentsArray = studentsArray.filter(s => s.id !== focusedStudent);
+          studentsArray.unshift(focusedData);
+      }
+
+      // Toggle container style based on focus state
+      if (focusedStudent && liveStudents[focusedStudent]) {
+        aiScreenContainer.classList.add('focused');
+      } else {
+        aiScreenContainer.classList.remove('focused');
+      }
+
+      studentsArray.forEach((data) => {
+        const card = document.createElement('div');
+        card.className = 'ai-screen-card';
+        card.id = `card-${data.id}`;
+        card.onclick = () => focusStudent(data.id);
+
+        const name = document.createElement('div');
+        name.className = 'ai-student-name';
+        name.textContent = `${data.username || 'TARGET'} (${data.class || 'CLASSIFIED'})`;
+
+        const img = document.createElement('img');
+        img.src = data.blobUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgMzAwIDE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJyZ2JhKDAsIDAsIDAsIDAuNSkiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkpldEJyYWlucyBNb25vLCBtb25vc3BhY2UiIGZvbnQtc2l6ZT0iMjBweCIgZmlsbD0iIzAwZmY5ZCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RkVFRCBMRVNTPC90ZXh0Pjwvc3ZnPg==';
+        img.className = 'ai-screen-img';
+        img.alt = `Live screen feed for ${data.username}`;
+        img.loading = 'lazy';
+        
+        if (data.id === focusedStudent) {
+             card.classList.add('focused-card');
+        }
+
+        card.append(name, img);
+        aiScreenContainer.appendChild(card);
+      });
+    }
+
+    function activateAIGrid(fullscreen = false) {
+      aiGrid.classList.add('active');
+      focusedStudent = null; // Clear focus when activating the full grid
+      updateAIGrid();
+      log(" VISION MODE: ENGAGED. ALL TARGETS VISIBLE.", "#00ffff");
+      if (fullscreen) toggleFullscreen();
+    }
+
+    function closeAIGrid() {
+      aiGrid.classList.remove('active');
+      focusedStudent = null;
+      log("AI Vision Mode deactivated.", "var(--secondary-color)");
+      if (document.fullscreenElement) toggleFullscreen();
+    }
+
+    function sendAlert(message) {
+      const alertOverlay = document.getElementById('alertOverlay');
+      const alertText = document.getElementById('alertText');
+      alertText.textContent = message.toUpperCase();
+      alertOverlay.classList.add('active');
+      setTimeout(() => alertOverlay.classList.remove('active'), 3000);
+      log(`GLOBAL ALERT SENT: "${message}"`, "#ff0066");
+    }
+
+    function sendMessage(id, message) {
+        if (id === 'ALL') {
+             const command = `MESSAGE:ALL:${message}`;
+             ws.send(command);
+             log(`SENT GLOBAL MESSAGE to ALL ${Object.keys(liveStudents).length} targets: "${message}"`, "#00ff00");
+             return;
+        }
+
+        if (!liveStudents[id]) {
+            log(`ERROR: Target ID ${id} not found.`, "#ff0066");
+            return;
+        }
+        const command = `MESSAGE:${id}:${message}`;
+        ws.send(command);
+        log(`SENT PRIVATE MESSAGE to ${liveStudents[id].username}: "${message}"`, "var(--secondary-color)");
+    }
+
+    function terminateConnection(id) {
+        if (!liveStudents[id]) {
+            log(`ERROR: Target ID ${id} not found.`, "#ff0066");
+            return;
+        }
+        const command = `TERMINATE:${id}`;
+        ws.send(command);
+        log(`INITIATING TERMINATION sequence for ${liveStudents[id].username} (ID: ${id.substring(0,8)})...`, "#ff0066");
+    }
+
+    function lockTarget(id) {
+        if (!liveStudents[id]) {
+            log(`ERROR: Target ID ${id} not found.`, "#ff0066");
+            return;
+        }
+        // Send the LOCK command to the server
+        const command = `LOCK:${id}`;
+        ws.send(command);
+        log(`SENT LOCK command to ${liveStudents[id].username}. Screen should be disabled.`, "#ffff00");
+    }
+
+    function unlockTarget(id) { // NEW: Unlock function
+        if (!liveStudents[id]) {
+            log(`ERROR: Target ID ${id} not found.`, "#ff0066");
+            return;
+        }
+        // Send the UNLOCK command to the server
+        const command = `UNLOCK:${id}`;
+        ws.send(command);
+        log(`SENT UNLOCK command to ${liveStudents[id].username}. Screen released.`, "var(--primary-color)");
+    }
+
+    function purgeTarget(id) { // NEW: Purge function
+        if (!liveStudents[id]) {
+            log(`ERROR: Target ID ${id} not found.`, "#ff0066");
+            return;
+        }
+        if (liveStudents[id].blobUrl) URL.revokeObjectURL(liveStudents[id].blobUrl);
+        liveStudents[id].blobUrl = null;
+        log(`PURGE: Screen data for ${liveStudents[id].username} cleared from local memory.`, "var(--secondary-color)");
+        if (aiGrid.classList.contains('active')) updateAIGrid();
+    }
+
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const fullCmd = input.value.trim();
+        const cmd = fullCmd.toLowerCase();
+        log(`<span style="color:var(--secondary-color)">OVERLORD@CORE:~$</span> <span style="color:var(--primary-color)">${fullCmd}</span>`, "white");
+
+        if (cmd === 'get current info' || cmd === 'vision') activateAIGrid(true); // Fullscreen on 'vision'
+        else if (cmd === 'count') log(`ACTIVE TARGETS: ${Object.keys(liveStudents).length}`, "var(--primary-color)");
+        else if (cmd === 'list') {
+          if (Object.keys(liveStudents).length === 0) log("No targets acquired.");
+          else Object.values(liveStudents).forEach(s => log(`• ${s.username} - ${s.class} [ID: ${s.id.substring(0,10)}...]`, "white"));
+        }
+        else if (cmd.startsWith('focus ')) {
+          const id = fullCmd.split(' ')[1];
+          if (liveStudents[id]) { activateAIGrid(); setTimeout(() => focusStudent(id), 500); }
+          else log("ERROR: Target not found. Use 'list' to see IDs.", "#ff0066");
+        }
+        else if (cmd.startsWith('alert ')) sendAlert(fullCmd.substring(6));
+        
+        // NEW COMMAND: message_all
+        else if (cmd.startsWith('message_all ')) {
+            const message = fullCmd.substring(12).trim();
+            if (message) {
+                 sendMessage('ALL', message);
+            } else {
+                log("ERROR: Invalid message format. Usage: message_all <text>", "#ff0066");
+            }
+        }
+        // Existing command: message (private)
+        else if (cmd.startsWith('message ')) {
+            const parts = fullCmd.substring(8).trim().split(/ (.+)/s); 
+            if (parts.length === 2) {
+                sendMessage(parts[0].trim(), parts[1].trim());
+            } else {
+                log("ERROR: Invalid message format. Usage: message <id> <text>", "#ff0066");
+            }
+        }
+        else if (cmd.startsWith('terminate ')) {
+            const id = fullCmd.substring(10).trim();
+            terminateConnection(id);
+        }
+        else if (cmd.startsWith('lock ')) { 
+            const id = fullCmd.substring(5).trim();
+            lockTarget(id);
+        }
+        // NEW COMMAND: unlock
+        else if (cmd.startsWith('unlock ')) { 
+            const id = fullCmd.substring(7).trim();
+            unlockTarget(id);
+        }
+        // NEW COMMAND: purge
+        else if (cmd.startsWith('purge ')) { 
+            const id = fullCmd.substring(6).trim();
+            purgeTarget(id);
+        }
+        else if (cmd === 'scan') {
+          log("INITIATING FULL SPECTRUM SCAN...", "var(--secondary-color)");
+          setTimeout(() => log("SCAN COMPLETE. ALL TARGETS LOCKED."), 2000);
+        }
+        else if (cmd === 'matrix') log("Entering the Matrix... ( ͡° ͜ʖ ͡°)", "var(--primary-color)");
+        else if (cmd === 'clear') output.innerHTML = '';
+        else if (cmd === 'help') {
+          log(`
+<span style="color:#00ff9d;font-weight:bold;font-family:Orbitron;"> OVERLORD COMMANDS:</span>
+  <span style="color:#00ffff">get current info / vision</span> → Activate Live Target Vision Grid (Goes Fullscreen)
+  <span style="color:var(--secondary-color)">count</span>                     → Show number of active targets
+  <span style="color:var(--secondary-color)">list</span>                        → List all targets with their IDs
+  <span style="color:var(--secondary-color)">focus &lt;id&gt;</span>                  → Zoom and center on one target's live feed (No Fullscreen)
+  <span style="color:#00ff00">message &lt;id&gt; &lt;text&gt;</span>        → Send a private message to a specific target
+  <span style="color:#00ff00">message_all &lt;text&gt;</span>         → Send a message to ALL active targets
+  <span style="color:#ffff00">lock &lt;id&gt;</span>                   → Remotely lock a target's screen/client
+  <span style="color:var(--primary-color)">unlock &lt;id&gt;</span>                 → Remotely unlock a previously locked target's screen
+  <span style="color:var(--secondary-color)">purge &lt;id&gt;</span>                  → Clear a target's screen data from local console memory
+  <span style="color:#ff0066">terminate &lt;id&gt;</span>              → Remotely disconnect a target (Warning!)
+  <span style="color:var(--secondary-color)">alert &lt;msg&gt;</span>               → Send a global red alert notification
+  <span style="color:var(--secondary-color)">scan</span>                        → Run scan animation
+  <span style="color:var(--secondary-color)">matrix</span>                      → Enter Matrix mode
+  <span style="color:var(--secondary-color)">clear</span>                       → Clear console screen
+  <span style="color:var(--secondary-color)">help</span>                        → Display this command list
+          `);
+        }
+        else if (cmd) log("ERROR: Command not recognized. Type 'help'", "#ff0066");
+
+        input.value = '';
+      }
+    });
+
+    window.addEventListener('click', () => input.focus());
+  </script>
+</body>
+</html>
